@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DBConnection {
 
@@ -15,6 +16,11 @@ public class DBConnection {
     private DBConnection() {
         try {
             connection = DriverManager.getConnection(DB_PATH);
+            // ensure foreign keys are enforced
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON;");
+            }
+
             System.out.println("✅ SQLite database connected successfully.");
 
             createTables();
@@ -42,7 +48,9 @@ public class DBConnection {
                 "CREATE TABLE IF NOT EXISTS Bills (" +
                 "bill_id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "bill_date TEXT NOT NULL," +
-                "total_amount REAL NOT NULL" +
+                "total_amount REAL NOT NULL," +
+                "buyer_id INTEGER," +
+                "FOREIGN KEY (buyer_id) REFERENCES Buyers(buyer_id)" +
                 ");";
 
         String createBillItemsTable =
@@ -50,7 +58,7 @@ public class DBConnection {
                 "item_id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "bill_id INTEGER NOT NULL," +
                 "item_name TEXT NOT NULL," +
-                "quantity INTEGER NOT NULL," +
+                "quantity REAL NOT NULL," +    // changed to REAL to accept double quantities
                 "price REAL NOT NULL," +
                 "FOREIGN KEY (bill_id) REFERENCES Bills(bill_id)" +
                 ");";
@@ -58,20 +66,29 @@ public class DBConnection {
         String createBuyersTable =
                 "CREATE TABLE IF NOT EXISTS Buyers (" +
                 "buyer_id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "name TEXT NOT NULL," +
+                "name TEXT," +
                 "phone TEXT" +
                 ");";
 
         try (
-            PreparedStatement ps1 = connection.prepareStatement(createBillsTable);
-            PreparedStatement ps2 = connection.prepareStatement(createBillItemsTable);
-            PreparedStatement ps3 = connection.prepareStatement(createBuyersTable)
+            PreparedStatement ps1 = connection.prepareStatement(createBuyersTable);
+            PreparedStatement ps2 = connection.prepareStatement(createBillsTable);
+            PreparedStatement ps3 = connection.prepareStatement(createBillItemsTable)
         ) {
+            // Create tables (order matters because of FK)
             ps1.execute();
             ps2.execute();
             ps3.execute();
 
             System.out.println("✅ Database tables verified/created.");
+
+            // If the DB existed from Phase1 without buyer_id in Bills, attempt to add column.
+            // If it already exists, ALTER will throw — catch and ignore.
+            try (Statement alter = connection.createStatement()) {
+                alter.execute("ALTER TABLE Bills ADD COLUMN buyer_id INTEGER;");
+            } catch (SQLException ignored) {
+                // column probably already exists — ignore
+            }
 
         } catch (SQLException e) {
             System.out.println("❌ Error creating tables.");

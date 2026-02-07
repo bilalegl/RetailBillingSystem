@@ -1,5 +1,6 @@
 package controller;
 
+import dao.BillDAO;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -9,10 +10,12 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.converter.DoubleStringConverter;
+import model.Bill;
 import model.BillItem;
+import model.Buyer;
 import util.SceneManager;
 
-import java.text.DecimalFormat;
+import java.sql.SQLException;
 import java.util.Locale;
 
 public class CreateBillController {
@@ -22,6 +25,7 @@ public class CreateBillController {
     @FXML private Button btnAddRow;
     @FXML private Button btnRemoveRow;
     @FXML private Button btnBack;
+    @FXML private Button btnSave;
 
     @FXML private TableView<BillItem> tableItems;
     @FXML private TableColumn<BillItem, String> colProduct;
@@ -35,9 +39,6 @@ public class CreateBillController {
     @FXML private Label lblGrandTotal;
 
     private final ObservableList<BillItem> items = FXCollections.observableArrayList();
-
-    // Decimal formatting (UI only)
-    private final DecimalFormat moneyFormat = (DecimalFormat) DecimalFormat.getCurrencyInstance(Locale.getDefault());
 
     @FXML
     private void initialize() {
@@ -91,7 +92,6 @@ public class CreateBillController {
             }
         });
 
-        // Keep totals updated when list changes or item properties change
         items.addListener((ListChangeListener<BillItem>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
@@ -99,17 +99,13 @@ public class CreateBillController {
                         attachItemListeners(added);
                     }
                 }
-                // no special detach needed (garbage collection)
             }
             recalcTotals();
         });
 
-        // Discount percent change listener
-        txtDiscountPercent.textProperty().addListener((obs, oldV, newV) -> {
-            recalcTotals();
-        });
+        txtDiscountPercent.textProperty().addListener((obs, oldV, newV) -> recalcTotals());
 
-        // Add an initial empty row so the user sees something
+        // Add initial row
         items.add(new BillItem("", 1.0, 0.0));
     }
 
@@ -124,20 +120,17 @@ public class CreateBillController {
         double subtotal = items.stream().mapToDouble(BillItem::getItemTotal).sum();
         double discountPercent = parseDoubleSafe(txtDiscountPercent.getText(), 0.0);
         if (Double.isNaN(discountPercent) || discountPercent < 0) discountPercent = 0.0;
-        // If user gives >100, clamp
         if (discountPercent > 100.0) discountPercent = 100.0;
 
         double discountAmount = subtotal * (discountPercent / 100.0);
         double grandTotal = subtotal - discountAmount;
 
-        // Update UI (format numbers)
         lblSubtotal.setText(formatNumber(subtotal));
         lblDiscountAmount.setText(formatNumber(discountAmount));
         lblGrandTotal.setText(formatNumber(grandTotal));
     }
 
     private String formatNumber(double value) {
-        // Use simple 2-decimal formatting without currency symbol for clarity
         return String.format(Locale.getDefault(), "%.2f", value);
     }
 
@@ -160,7 +153,6 @@ public class CreateBillController {
     @FXML
     private void handleAddRow(ActionEvent event) {
         items.add(new BillItem("", 1.0, 0.0));
-        // select the newly added row and scroll to it for UX
         int lastIndex = items.size() - 1;
         tableItems.getSelectionModel().select(lastIndex);
         tableItems.scrollTo(lastIndex);
@@ -172,7 +164,6 @@ public class CreateBillController {
         if (selected != null) {
             items.remove(selected);
         } else {
-            // optional: show a small alert
             Alert a = new Alert(Alert.AlertType.INFORMATION, "No row selected to remove.", ButtonType.OK);
             a.setHeaderText(null);
             a.showAndWait();
@@ -181,7 +172,75 @@ public class CreateBillController {
 
     @FXML
     private void handleBack(ActionEvent event) {
-        // Strict rule: no persistence here
         SceneManager.showScene("MainMenu.fxml");
+    }
+
+    /**
+     * SAVE -> create Bill model, call DAO to persist within a transaction,
+     * then lock UI on success.
+     */
+    @FXML
+    private void handleSave(ActionEvent event) {
+        // Basic validation: must have at least one item and non-empty totals
+        if (items.isEmpty()) {
+            Alert a = new Alert(Alert.AlertType.WARNING, "Add at least one item before saving.", ButtonType.OK);
+            a.setHeaderText(null);
+            a.showAndWait();
+            return;
+        }
+
+        Bill bill = new Bill();
+        bill.setSubtotal(parseDoubleSafe(lblSubtotal.getText(), 0.0));
+        double discountPercent = parseDoubleSafe(txtDiscountPercent.getText(), 0.0);
+        bill.setDiscountPercent(discountPercent);
+        bill.setDiscountAmount(parseDoubleSafe(lblDiscountAmount.getText(), 0.0));
+        bill.setGrandTotal(parseDoubleSafe(lblGrandTotal.getText(), 0.0));
+
+        String buyerName = txtBuyerName.getText();
+        String buyerPhone = txtBuyerPhone.getText();
+        if ((buyerName != null && !buyerName.isBlank()) || (buyerPhone != null && !buyerPhone.isBlank())) {
+            Buyer buyer = new Buyer(buyerName, buyerPhone);
+            bill.setBuyer(buyer);
+        }
+
+        // copy items into bill model
+        for (BillItem item : items) {
+            bill.addItem(item);
+        }
+
+        // Call DAO
+        BillDAO billDAO = new BillDAO();
+        try {
+            int generatedBillId = billDAO.saveBill(bill);
+            // success
+            Alert a = new Alert(Alert.AlertType.INFORMATION, "Bill saved successfully. Bill ID: " + generatedBillId, ButtonType.OK);
+            a.setHeaderText(null);
+            a.showAndWait();
+            lockUIAfterSave();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            Alert a = new Alert(Alert.AlertType.ERROR, "Failed to save bill: " + ex.getMessage(), ButtonType.OK);
+            a.setHeaderText(null);
+            a.showAndWait();
+        }
+    }
+
+    /**
+     * Lock UI after successful save: no editing allowed (immutable record).
+     */
+    private void lockUIAfterSave() {
+        // disable editing
+        tableItems.setEditable(false);
+        colProduct.setEditable(false);
+        colQuantity.setEditable(false);
+        colUnitPrice.setEditable(false);
+
+        // disable buttons & inputs
+        btnAddRow.setDisable(true);
+        btnRemoveRow.setDisable(true);
+        btnSave.setDisable(true);
+        txtBuyerName.setEditable(false);
+        txtBuyerPhone.setEditable(false);
+        txtDiscountPercent.setEditable(false);
     }
 }

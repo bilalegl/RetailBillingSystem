@@ -34,6 +34,7 @@
         <Button fx:id="btnAddRow" text="Add Row" onAction="#handleAddRow"/>
         <Button fx:id="btnRemoveRow" text="Remove Selected Row" onAction="#handleRemoveSelected"/>
         <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="btnSave" text="Save" onAction="#handleSave"/>
         <Button fx:id="btnBack" text="Back" onAction="#handleBack"/>
     </HBox>
 
