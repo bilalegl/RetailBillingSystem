@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "application.Main",
+            "projectName": "RetailBillingSystem_89e4090e"
+        },
+        {
+            "type": "java",
             "name": "Run RetailBillingSystem",
             "request": "launch",
             "mainClass": "application.Main",

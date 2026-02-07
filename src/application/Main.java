@@ -2,22 +2,24 @@ package application;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-import javafx.scene.Scene;
-import javafx.scene.layout.Pane;
+import util.SceneManager;
 
 public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-
-        // Initialize DB (tables will be created here)
+        // Initialize DB (Phase 1) — tables will be verified/created there
         DBConnection.getInstance();
 
-        Pane root = new Pane(); // Placeholder UI
-        Scene scene = new Scene(root, 600, 400);
+        // Register primary stage for scene switching
+        SceneManager.setPrimaryStage(primaryStage);
 
+        // Set window title
         primaryStage.setTitle("Retail Billing System");
-        primaryStage.setScene(scene);
+
+        // Show Main Menu on startup
+        SceneManager.showScene("MainMenu.fxml");
+
         primaryStage.show();
     }
 
