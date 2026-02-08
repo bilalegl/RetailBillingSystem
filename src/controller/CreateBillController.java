@@ -1,5 +1,12 @@
 package controller;
 
+import javafx.concurrent.Task;
+import javax.print.PrintService;
+import javax.print.PrintServiceLookup;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import dao.BillDAO;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
@@ -18,6 +25,13 @@ import util.SceneManager;
 import java.sql.SQLException;
 import java.util.Locale;
 
+/**
+ * CreateBillController with Phase-9 validation & safety improvements:
+ *  - prevents empty product names
+ *  - prevents negative quantities/prices
+ *  - disables Save if no items or invalid rows
+ *  - friendly error dialogs
+ */
 public class CreateBillController {
 
     @FXML private TextField txtBuyerName;
@@ -38,6 +52,10 @@ public class CreateBillController {
     @FXML private Label lblDiscountAmount;
     @FXML private Label lblGrandTotal;
 
+    @FXML private Button btnNativePrint;
+
+    private int currentSavedBillId = -1;
+
     private final ObservableList<BillItem> items = FXCollections.observableArrayList();
 
     @FXML
@@ -46,36 +64,62 @@ public class CreateBillController {
         tableItems.setItems(items);
         tableItems.setEditable(true);
 
-        // Product column - editable text
+        // Product column - editable text with validation (no empty names)
         colProduct.setCellValueFactory(cell -> cell.getValue().productNameProperty());
         colProduct.setCellFactory(TextFieldTableCell.forTableColumn());
         colProduct.setOnEditCommit(ev -> {
             BillItem item = ev.getRowValue();
-            item.setProductName(ev.getNewValue() == null ? "" : ev.getNewValue());
+            String newVal = ev.getNewValue() == null ? "" : ev.getNewValue().trim();
+            if (newVal.isEmpty()) {
+                showAlert("Invalid product name", "Product name cannot be empty. Reverting to previous value.");
+                // revert to old value
+                item.setProductName(ev.getOldValue() == null ? "" : ev.getOldValue());
+                tableItems.refresh();
+            } else {
+                item.setProductName(newVal);
+            }
+            updateSaveButtonState();
         });
 
-        // Quantity column - editable double
+        // Quantity column - editable double with validation (no negatives)
         colQuantity.setCellValueFactory(cell -> cell.getValue().quantityProperty().asObject());
         colQuantity.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         colQuantity.setOnEditCommit(ev -> {
             BillItem item = ev.getRowValue();
-            Double newValue = parseDoubleSafe(ev.getNewValue(), 1.0);
-            if (newValue < 0) newValue = 0.0;
-            item.setQuantity(newValue);
+            Double newValue = parseDoubleSafe(ev.getNewValue(), null);
+            if (newValue == null) {
+                showAlert("Invalid quantity", "Quantity must be a numeric value. Reverting to previous value.");
+                // revert
+                item.setQuantity(ev.getOldValue() == null ? 1.0 : ev.getOldValue());
+            } else if (newValue < 0) {
+                showAlert("Invalid quantity", "Quantity cannot be negative. Reverting to previous value.");
+                item.setQuantity(ev.getOldValue() == null ? 1.0 : ev.getOldValue());
+            } else {
+                item.setQuantity(newValue);
+            }
             tableItems.refresh();
             recalcTotals();
+            updateSaveButtonState();
         });
 
-        // Unit price column - editable double
+        // Unit price column - editable double with validation (no negatives)
         colUnitPrice.setCellValueFactory(cell -> cell.getValue().unitPriceProperty().asObject());
         colUnitPrice.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         colUnitPrice.setOnEditCommit(ev -> {
             BillItem item = ev.getRowValue();
-            Double newValue = parseDoubleSafe(ev.getNewValue(), 0.0);
-            if (newValue < 0) newValue = 0.0;
-            item.setUnitPrice(newValue);
+            Double newValue = parseDoubleSafe(ev.getNewValue(), null);
+            if (newValue == null) {
+                showAlert("Invalid unit price", "Unit price must be a numeric value. Reverting to previous value.");
+                item.setUnitPrice(ev.getOldValue() == null ? 0.0 : ev.getOldValue());
+            } else if (newValue < 0) {
+                showAlert("Invalid unit price", "Unit price cannot be negative. Reverting to previous value.");
+                item.setUnitPrice(ev.getOldValue() == null ? 0.0 : ev.getOldValue());
+            } else {
+                item.setUnitPrice(newValue);
+            }
             tableItems.refresh();
             recalcTotals();
+            updateSaveButtonState();
         });
 
         // Item total column - read-only
@@ -92,6 +136,7 @@ public class CreateBillController {
             }
         });
 
+        // Update totals and attach listeners when list changes
         items.addListener((ListChangeListener<BillItem>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
@@ -101,19 +146,28 @@ public class CreateBillController {
                 }
             }
             recalcTotals();
+            updateSaveButtonState();
         });
 
+        // discount changes affect totals only
         txtDiscountPercent.textProperty().addListener((obs, oldV, newV) -> recalcTotals());
 
-        // Add initial row
+        // Start with one empty row but Save is disabled until valid
         items.add(new BillItem("", 1.0, 0.0));
+        updateSaveButtonState();
     }
 
     private void attachItemListeners(BillItem item) {
-        ChangeListener<Number> anyChange = (obs, oldVal, newVal) -> recalcTotals();
+        ChangeListener<Number> anyChange = (obs, oldVal, newVal) -> {
+            recalcTotals();
+            updateSaveButtonState();
+        };
         item.quantityProperty().addListener(anyChange);
         item.unitPriceProperty().addListener(anyChange);
-        item.itemTotalProperty().addListener((obs, oldVal, newVal) -> recalcTotals());
+        item.itemTotalProperty().addListener((obs, oldVal, newVal) -> {
+            recalcTotals();
+            updateSaveButtonState();
+        });
     }
 
     private void recalcTotals() {
@@ -134,7 +188,7 @@ public class CreateBillController {
         return String.format(Locale.getDefault(), "%.2f", value);
     }
 
-    private double parseDoubleSafe(Object possibleNumber, double fallback) {
+    private Double parseDoubleSafe(Object possibleNumber, Double fallback) {
         if (possibleNumber == null) return fallback;
         try {
             if (possibleNumber instanceof Number) {
@@ -156,6 +210,7 @@ public class CreateBillController {
         int lastIndex = items.size() - 1;
         tableItems.getSelectionModel().select(lastIndex);
         tableItems.scrollTo(lastIndex);
+        updateSaveButtonState();
     }
 
     @FXML
@@ -163,6 +218,7 @@ public class CreateBillController {
         BillItem selected = tableItems.getSelectionModel().getSelectedItem();
         if (selected != null) {
             items.remove(selected);
+            updateSaveButtonState();
         } else {
             Alert a = new Alert(Alert.AlertType.INFORMATION, "No row selected to remove.", ButtonType.OK);
             a.setHeaderText(null);
@@ -181,11 +237,16 @@ public class CreateBillController {
      */
     @FXML
     private void handleSave(ActionEvent event) {
-        // Basic validation: must have at least one item and non-empty totals
+        // Final validation before saving (should normally be prevented by disabled button)
+        List<String> errors = getValidationErrors();
+        if (!errors.isEmpty()) {
+            String msg = "Please fix the following errors before saving:\n\n" + String.join("\n", errors);
+            showAlert("Cannot save - validation failed", msg);
+            return;
+        }
+
         if (items.isEmpty()) {
-            Alert a = new Alert(Alert.AlertType.WARNING, "Add at least one item before saving.", ButtonType.OK);
-            a.setHeaderText(null);
-            a.showAndWait();
+            showAlert("No items", "Add at least one item before saving.");
             return;
         }
 
@@ -211,9 +272,9 @@ public class CreateBillController {
         // Call DAO
         BillDAO billDAO = new BillDAO();
         try {
-            int generatedBillId = billDAO.saveBill(bill);
+            currentSavedBillId = billDAO.saveBill(bill); // ✅ update controller state
             // success
-            Alert a = new Alert(Alert.AlertType.INFORMATION, "Bill saved successfully. Bill ID: " + generatedBillId, ButtonType.OK);
+            Alert a = new Alert(Alert.AlertType.INFORMATION, "Bill saved successfully. Bill ID: " + currentSavedBillId, ButtonType.OK);
             a.setHeaderText(null);
             a.showAndWait();
             lockUIAfterSave();
@@ -223,6 +284,88 @@ public class CreateBillController {
             a.setHeaderText(null);
             a.showAndWait();
         }
+    }
+
+    // Native print handler (keeps existing behavior but uses currentSavedBillId)
+    @FXML
+    private void handleNativePrint() {
+
+        if (currentSavedBillId <= 0) {
+            showAlert("Not saved", "Save the bill before printing.");
+            return;
+        }
+
+        // 1. Get available printers
+        PrintService[] services = PrintServiceLookup.lookupPrintServices(null, null);
+        if (services == null || services.length == 0) {
+            showAlert("No printers", "No printers found on this system.");
+            return;
+        }
+
+        List<String> printerNames = Arrays.stream(services)
+                .map(PrintService::getName)
+                .collect(Collectors.toList());
+
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(printerNames.get(0), printerNames);
+        dialog.setTitle("Select Printer");
+        dialog.setHeaderText("Select printer for bill printing");
+        dialog.setContentText("Printer:");
+
+        dialog.showAndWait().ifPresent(selectedPrinter -> {
+
+            PrintService chosenService = Arrays.stream(services)
+                    .filter(p -> p.getName().equals(selectedPrinter))
+                    .findFirst()
+                    .orElse(null);
+
+            if (chosenService == null) {
+                showAlert("Printer error", "Selected printer not found.");
+                return;
+            }
+
+            // 2. Background printing task
+            Task<Void> printTask = new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    dao.BillDAO billDAO = new dao.BillDAO();
+                    model.Bill bill = billDAO.getBillById(currentSavedBillId);
+
+                    // Actual native printing (BLOCKING but now on background thread)
+                    util.NativePrinter.printBillToService(bill, chosenService);
+                    return null;
+                }
+            };
+
+            // 3. UI state handling
+            printTask.setOnRunning(e -> {
+                btnNativePrint.setDisable(true);
+            });
+
+            printTask.setOnSucceeded(e -> {
+                btnNativePrint.setDisable(false);
+                showAlert("Print", "Bill sent to printer successfully.");
+            });
+
+            printTask.setOnFailed(e -> {
+                btnNativePrint.setDisable(false);
+                Throwable ex = printTask.getException();
+                ex.printStackTrace();
+                showAlert("Print failed", ex.getMessage());
+            });
+
+            // 4. Start background thread
+            Thread t = new Thread(printTask);
+            t.setDaemon(true);
+            t.start();
+        });
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     /**
@@ -242,5 +385,44 @@ public class CreateBillController {
         txtBuyerName.setEditable(false);
         txtBuyerPhone.setEditable(false);
         txtDiscountPercent.setEditable(false);
+    }
+
+    // ---------------- Validation helpers ----------------
+
+    /**
+     * Returns list of validation error messages (empty if valid).
+     */
+    private List<String> getValidationErrors() {
+        List<String> errors = FXCollections.observableArrayList();
+
+        if (items.isEmpty()) {
+            errors.add("No items in the bill.");
+            return errors;
+        }
+
+        int idx = 1;
+        for (BillItem it : items) {
+            String pname = it.getProductName() == null ? "" : it.getProductName().trim();
+            if (pname.isEmpty()) {
+                errors.add("Row " + idx + ": Product name cannot be empty.");
+            }
+            if (it.getQuantity() < 0) {
+                errors.add("Row " + idx + ": Quantity cannot be negative.");
+            }
+            if (it.getUnitPrice() < 0) {
+                errors.add("Row " + idx + ": Unit price cannot be negative.");
+            }
+            idx++;
+        }
+        return errors;
+    }
+
+    /**
+     * Enable/disable Save button based on validation state.
+     */
+    private void updateSaveButtonState() {
+        List<String> errors = getValidationErrors();
+        boolean valid = errors.isEmpty();
+        btnSave.setDisable(!valid);
     }
 }

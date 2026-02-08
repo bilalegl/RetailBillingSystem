@@ -1,18 +1,1 @@
-{
-    "java.configuration.runtimes": [
-        {
-            "name": "JavaSE-25",
-            "path": "C:/Program Files/Java/jdk-25"
-        }
-    ],
-    "java.project.referencedLibraries": [
-        "lib/sqlite-jdbc-3.51.1.0.jar",
-        "lib/pdfbox-app-3.0.6.jar",
-        "C:/javafx-sdk-21.0.7/lib/*.jar"
-    ],
-    "java.project.sourcePaths": [
-        "src"
-    ],
-    "java.project.outputPath": "bin",
-    "java.debug.settings.vmArgs": "--module-path \"C:/javafx-sdk-21.0.7/lib\" --add-modules javafx.controls,javafx.fxml"
-}
+{ "java.configuration.runtimes": [ { "name": "JavaSE-25", "path": "C:/Program Files/Java/jdk-25" } ], "java.project.referencedLibraries": [ "lib/sqlite-jdbc-3.51.1.0.jar", "lib/pdfbox-app-3.0.6.jar", "C:/javafx-sdk-21.0.7/lib/*.jar" ], "java.project.sourcePaths": [ "src" ], "java.project.outputPath": "bin", "java.debug.settings.vmArgs": "--module-path \"C:/javafx-sdk-21.0.7/lib\" --add-modules javafx.controls,javafx.fxml" }

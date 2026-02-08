@@ -1,5 +1,12 @@
 package controller;
 
+import javax.print.PrintService;
+import javax.print.PrintServiceLookup;
+import util.NativePrinter;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import dao.BillDAO;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -42,6 +49,47 @@ public class ViewBillController {
     private final BillDAO billDAO = new BillDAO();
 
     private int currentBillId = -1;
+
+    @FXML
+private void handleNativePrint() {
+    try {
+        // list available printers
+        PrintService[] services = NativePrinter.listPrintServices();
+        if (services == null || services.length == 0) {
+            showAlert("No printers", "No print services (printers) found on this system.");
+            return;
+        }
+
+        List<String> names = Arrays.stream(services).map(PrintService::getName).collect(Collectors.toList());
+        ChoiceDialog<String> dlg = new ChoiceDialog<>(names.get(0), names);
+        dlg.setTitle("Select Printer");
+        dlg.setHeaderText("Select a native printer to send the job to");
+        dlg.setContentText("Printer:");
+
+        dlg.showAndWait().ifPresent(selectedName -> {
+            // find PrintService by name
+            PrintService chosen = Arrays.stream(services)
+                    .filter(s -> s.getName().equals(selectedName))
+                    .findFirst().orElse(null);
+            if (chosen != null) {
+                try {
+                    // load full bill snapshot then print
+                    dao.BillDAO billDAO = new dao.BillDAO();
+                    model.Bill full = billDAO.getBillById(Integer.parseInt(lblBillId.getText()));
+                    NativePrinter.printBillToService(full, chosen);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    showAlert("Print error", "Failed to print: " + ex.getMessage());
+                }
+            }
+        });
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        showAlert("Print error", "Failed to print: " + ex.getMessage());
+    }
+}
+
 
     @FXML
     private void initialize() {

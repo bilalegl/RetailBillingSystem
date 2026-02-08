@@ -1,0 +1,36 @@
+/* Minimal clean theme for production */
+.root {
+    -fx-font-family: "Segoe UI", "Tahoma", "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f5f7fb;
+}
+
+.label {
+    -fx-text-fill: #222;
+}
+
+.button {
+    -fx-padding: 6 12 6 12;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.button:hover {
+    -fx-opacity: 0.95;
+}
+
+.table-view {
+    -fx-border-color: #d6dbe6;
+    -fx-border-width: 1;
+    -fx-background-color: white;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: linear-gradient(#fafbfc, #f0f2f6);
+}
+
+.title-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 0 12 0;
+}

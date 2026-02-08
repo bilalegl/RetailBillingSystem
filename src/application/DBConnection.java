@@ -1,43 +1,43 @@
 package application;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * DBConnection:
- * - Keeps a singleton instance for bootstrap (create tables)
- * - But provides a static getConnection() that returns a NEW Connection each time (Option A)
+ * DBConnection (Phase 10 - production-ready):
+ * - Bootstraps DB on first use
+ * - Provides getConnection() returning a NEW Connection (Option A)
+ * - Uses java.util.logging instead of System.out prints
+ *
+ * Note: Keep DB file under resources/database/retailshop.db (project relative path).
  */
 public class DBConnection {
 
+    private static final Logger LOGGER = Logger.getLogger(DBConnection.class.getName());
     private static DBConnection instance;
 
-    // Keep the same path you used before
+    // Keep the same DB path as before
     private static final String DB_PATH = "jdbc:sqlite:resources/database/retailshop.db";
 
     private DBConnection() {
-        // Bootstrap: create tables and set PRAGMAs using a fresh connection
+        // Bootstrap and ensure tables exist. Uses a fresh connection (auto-closed).
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
-            // Enable foreign key support
+            // Enable foreign keys
             stmt.execute("PRAGMA foreign_keys = ON;");
 
             createTables(conn);
-
-            System.out.println("✅ SQLite database connected and tables verified/created.");
+            LOGGER.info("SQLite database initialized.");
 
         } catch (SQLException e) {
-            System.out.println("❌ Database initialization failed.");
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Database initialization failed", e);
         }
     }
 
     /**
-     * Keep this method so your Main.start() call DBConnection.getInstance() still works.
+     * Ensure singleton instance exists and DB is bootstrapped.
      */
     public static synchronized DBConnection getInstance() {
         if (instance == null) instance = new DBConnection();
@@ -45,14 +45,14 @@ public class DBConnection {
     }
 
     /**
-     * Option A: return a NEW connection each time. Callers should use try-with-resources.
+     * Return a NEW Connection for callers. Callers should use try-with-resources.
      */
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_PATH);
     }
 
     /**
-     * Create tables (called during bootstrap). Uses the provided connection.
+     * Create required tables if missing. Uses the provided connection.
      */
     private void createTables(Connection connection) throws SQLException {
 
@@ -82,21 +82,19 @@ public class DBConnection {
                 "FOREIGN KEY (bill_id) REFERENCES Bills(bill_id)" +
                 ");";
 
-        // Use PreparedStatement in try-with-resources (connection remains open while method executes)
         try (PreparedStatement ps1 = connection.prepareStatement(createBuyersTable);
              PreparedStatement ps2 = connection.prepareStatement(createBillsTable);
              PreparedStatement ps3 = connection.prepareStatement(createBillItemsTable)) {
-
             ps1.execute();
             ps2.execute();
             ps3.execute();
         }
 
-        // Try to add buyer_id column for backward compatibility; ignore errors if exists
+        // Best-effort: add buyer_id if it doesn't exist (older DBs). Ignore errors.
         try (Statement alter = connection.createStatement()) {
             alter.execute("ALTER TABLE Bills ADD COLUMN buyer_id INTEGER;");
         } catch (SQLException ignored) {
-            // column likely already exists; ignore
+            // Ignore — column likely exists already.
         }
     }
 }

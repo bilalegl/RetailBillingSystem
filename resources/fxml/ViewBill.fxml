@@ -90,6 +90,7 @@
 
             <Region HBox.hgrow="ALWAYS"/>
             <Button fx:id="btnPrint" text="Print" onAction="#handlePrint"/>
+            <Button fx:id="btnNativePrint" text="Print (Native)" onAction="#handleNativePrint"/>
             <Button fx:id="btnExportPdf" text="Export to PDF" onAction="#handleExportPdf"/>
             <Button fx:id="btnClose" text="Close" onAction="#handleClose"/>
         </HBox>
