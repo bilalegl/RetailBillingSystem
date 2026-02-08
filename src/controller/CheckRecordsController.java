@@ -111,6 +111,20 @@ colItemTotal.setCellValueFactory(c ->
                 clearDetails();
             }
         });
+
+                // double-click row to open full view in separate screen
+        tblBills.setRowFactory(tv -> {
+            TableRow<Bill> row = new TableRow<>();
+            row.setOnMouseClicked(evt -> {
+                if (evt.getClickCount() == 2 && !row.isEmpty()) {
+                    Bill b = row.getItem();
+                    // open ViewBill scene and pass id
+                    util.SceneManager.showViewBill(b.getId());
+                }
+            });
+            return row;
+        });
+
     }
 
     private void loadBills(Integer billId, String buyerName, LocalDate dateFrom, LocalDate dateTo) {

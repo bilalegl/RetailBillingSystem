@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="controller.ViewBillController"
+            prefWidth="800" prefHeight="560">
+
+    <!-- TOP -->
+    <top>
+        <VBox spacing="6" BorderPane.alignment="CENTER">
+            <Label text="View Bill"
+                   style="-fx-font-size:18px; -fx-font-weight:bold;" />
+        </VBox>
+    </top>
+
+    <!-- CENTER -->
+    <center>
+        <VBox spacing="8">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <!-- Bill meta -->
+            <GridPane hgap="8" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="20"/>
+                    <ColumnConstraints percentWidth="30"/>
+                    <ColumnConstraints percentWidth="20"/>
+                    <ColumnConstraints percentWidth="30"/>
+                </columnConstraints>
+
+                <Label text="Bill ID:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <Label fx:id="lblBillId" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Date:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                <Label fx:id="lblBillDate" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+                <Label text="Buyer Name:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <Label fx:id="lblBuyerName" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Buyer Phone:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                <Label fx:id="lblBuyerPhone" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+            </GridPane>
+
+            <!-- Items table -->
+            <Label text="Items:"
+                   style="-fx-font-weight:bold; -fx-padding:6 0 0 0;"/>
+
+            <TableView fx:id="tblItems" prefHeight="300" editable="false">
+                <columns>
+                    <TableColumn fx:id="colItemProduct" text="Product" prefWidth="320"/>
+                    <TableColumn fx:id="colItemQty" text="Qty" prefWidth="80"/>
+                    <TableColumn fx:id="colItemPrice" text="Unit Price" prefWidth="120"/>
+                    <TableColumn fx:id="colItemTotal" text="Item Total" prefWidth="140"/>
+                </columns>
+            </TableView>
+
+            <!-- Totals -->
+            <GridPane hgap="8" vgap="6" style="-fx-padding:6 0 0 0;">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="60"/>
+                    <ColumnConstraints percentWidth="40"/>
+                </columnConstraints>
+
+                <Label text="Subtotal:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <Label fx:id="lblSubtotal" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Discount Amount:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <Label fx:id="lblDiscountAmount" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Grand Total:"
+                       style="-fx-font-weight:bold;"
+                       GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <Label fx:id="lblGrandTotal"
+                       style="-fx-font-weight:bold;"
+                       GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            </GridPane>
+        </VBox>
+    </center>
+
+    <!-- BOTTOM -->
+    <bottom>
+        <HBox spacing="8" alignment="CENTER_RIGHT">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnPrint" text="Print" onAction="#handlePrint"/>
+            <Button fx:id="btnExportPdf" text="Export to PDF" onAction="#handleExportPdf"/>
+            <Button fx:id="btnClose" text="Close" onAction="#handleClose"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
