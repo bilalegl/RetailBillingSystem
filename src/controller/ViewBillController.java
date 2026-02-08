@@ -11,12 +11,14 @@ import javafx.print.Paper;
 import javafx.print.Printer;
 import javafx.print.PrinterJob;
 import javafx.scene.Node;
+import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import model.Bill;
 import model.BillItem;
 import model.Buyer;
 import util.SceneManager;
 
+import java.io.File;
 import java.util.List;
 
 public class ViewBillController {
@@ -144,26 +146,30 @@ private void handlePrint() {
 
 
     @FXML
-    private void handleExportPdf() {
-        // We use the system print dialog and instruct user to choose a PDF printer (e.g., "Microsoft Print to PDF").
-        PrinterJob job = PrinterJob.createPrinterJob();
-        if (job == null) {
-            showAlert("Export error", "No printers found on this system.");
-            return;
-        }
-        Window w = lblBillId.getScene().getWindow();
-        boolean proceed = job.showPrintDialog(w);
-        if (!proceed) return;
+private void handleExportPdf() {
+    FileChooser fc = new FileChooser();
+    fc.setTitle("Save Bill PDF");
+    fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+    fc.setInitialFileName("bill-" + lblBillId.getText() + ".pdf");
+    File out = fc.showSaveDialog(lblBillId.getScene().getWindow());
+    if (out == null) return;
 
-        Node printable = lblBillId.getScene().getRoot();
-        boolean printed = job.printPage(printable);
-        if (printed) {
-            job.endJob();
-            showAlert("Export", "Sent to the selected printer. If you chose a PDF printer, a PDF file was generated.");
-        } else {
-            showAlert("Export failed", "Exporting to PDF failed.");
-        }
+    File logo = new File("resources/images/logo.png"); // put your logo there
+    try {
+        // load a full Bill object via BillDAO here if you don't have it in controller
+        dao.BillDAO billDAO = new dao.BillDAO();
+        model.Bill full = billDAO.getBillById(Integer.parseInt(lblBillId.getText()));
+        util.PDFGenerator.generateBillPDF(full, out, logo.exists() ? logo : null, "Light World");
+        Alert a = new Alert(Alert.AlertType.INFORMATION, "PDF saved: " + out.getAbsolutePath(), ButtonType.OK);
+        a.setHeaderText(null);
+        a.showAndWait();
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        Alert a = new Alert(Alert.AlertType.ERROR, "Failed to generate PDF: " + ex.getMessage(), ButtonType.OK);
+        a.setHeaderText(null);
+        a.showAndWait();
     }
+}
 
     @FXML
     private void handleClose() {

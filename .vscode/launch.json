@@ -16,7 +16,8 @@
             "projectName": "RetailBillingSystem",
             "classPaths": [
                 "bin",
-                "lib/sqlite-jdbc-3.51.1.0.jar"
+                "lib/sqlite-jdbc-3.51.1.0.jar",
+                "lib/pdfbox-app-3.0.6.jar"
             ]
         }
     ]
