@@ -193,7 +193,7 @@ private void handlePrint() {
 }
 
 
-    @FXML
+@FXML
 private void handleExportPdf() {
     FileChooser fc = new FileChooser();
     fc.setTitle("Save Bill PDF");
@@ -202,12 +202,14 @@ private void handleExportPdf() {
     File out = fc.showSaveDialog(lblBillId.getScene().getWindow());
     if (out == null) return;
 
-    File logo = new File("resources/images/logo.png"); // put your logo there
     try {
         // load a full Bill object via BillDAO here if you don't have it in controller
         dao.BillDAO billDAO = new dao.BillDAO();
         model.Bill full = billDAO.getBillById(Integer.parseInt(lblBillId.getText()));
-        util.PDFGenerator.generateBillPDF(full, out, logo.exists() ? logo : null, "Light World");
+
+        // Use the new overload that loads logo from classpath automatically
+        util.PDFGenerator.generateBillPDF(full, out, "Light World");
+
         Alert a = new Alert(Alert.AlertType.INFORMATION, "PDF saved: " + out.getAbsolutePath(), ButtonType.OK);
         a.setHeaderText(null);
         a.showAndWait();
@@ -218,6 +220,7 @@ private void handleExportPdf() {
         a.showAndWait();
     }
 }
+
 
     @FXML
     private void handleClose() {

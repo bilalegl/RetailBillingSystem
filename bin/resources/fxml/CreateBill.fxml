@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.CreateBillController"
+      spacing="8" alignment="TOP_CENTER" prefWidth="700" prefHeight="520">
+    <padding>
+        <Insets top="12" right="12" bottom="12" left="12"/>
+    </padding>
+
+    <Label text="Create Bill" style="-fx-font-size:18px; -fx-font-weight:bold;"/>
+
+    <!-- Buyer details -->
+    <GridPane hgap="8" vgap="8">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="20"/>
+            <ColumnConstraints percentWidth="30"/>
+            <ColumnConstraints percentWidth="20"/>
+            <ColumnConstraints percentWidth="30"/>
+        </columnConstraints>
+
+        <Label text="Buyer Name:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="txtBuyerName" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+        <Label text="Phone:" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+        <TextField fx:id="txtBuyerPhone" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+    </GridPane>
+
+    <!-- Table and controls -->
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Button fx:id="btnAddRow" text="Add Row" onAction="#handleAddRow"/>
+        <Button fx:id="btnRemoveRow" text="Remove Selected Row" onAction="#handleRemoveSelected"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="btnNativePrint" text="Print (Native)" onAction="#handleNativePrint"/>
+        <Button fx:id="btnSave" text="Save" onAction="#handleSave"/>
+        <Button fx:id="btnBack" text="Back" onAction="#handleBack"/>
+    </HBox>
+
+    <TableView fx:id="tableItems" editable="true" VBox.vgrow="ALWAYS" prefHeight="320">
+        <columns>
+            <TableColumn fx:id="colProduct" text="Product Name" prefWidth="280"/>
+            <TableColumn fx:id="colQuantity" text="Quantity" prefWidth="110"/>
+            <TableColumn fx:id="colUnitPrice" text="Unit Price" prefWidth="120"/>
+            <TableColumn fx:id="colItemTotal" text="Item Total" prefWidth="140" />
+        </columns>
+    </TableView>
+
+    <!-- Totals area -->
+    <GridPane hgap="10" vgap="6">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="60"/>
+            <ColumnConstraints percentWidth="40"/>
+        </columnConstraints>
+
+        <Label text="Subtotal:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <Label fx:id="lblSubtotal" text="0.00" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+        <Label text="Discount (%)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <TextField fx:id="txtDiscountPercent" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+        <Label text="Discount Amount:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <Label fx:id="lblDiscountAmount" text="0.00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+        <Label text="Grand Total:" style="-fx-font-weight:bold;" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+        <Label fx:id="lblGrandTotal" text="0.00" style="-fx-font-weight:bold;" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+    </GridPane>
+
+</VBox>

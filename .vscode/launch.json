@@ -1,17 +1,25 @@
-{ "version": "0.2.0",
- "configurations": [ 
-    { "type": "java", 
-    "name": "Main", 
-    "request": "launch", 
-    "mainClass": "application.Main", 
-    "projectName": "RetailBillingSystem_89e4090e" 
-    }, 
-    { "type": "java", 
-    "name": "Run RetailBillingSystem", 
-    "request": "launch", 
-    "mainClass": "application.Main", 
-    "projectName": "RetailBillingSystem", 
-    "classPaths": [ "bin", "lib/sqlite-jdbc-3.51.1.0.jar", "lib/pdfbox-app-3.0.6.jar" ]
-     } 
-     ] 
-    }
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+         "type": "java",
+         "name": "Main",
+         "request": "launch",
+         "mainClass": "application.Main",
+         "projectName": "RetailBillingSystem_89e4090e"
+      },
+      {
+         "type": "java",
+         "name": "Launch RetailBillingSystem",
+         "request": "launch",
+         "mainClass": "application.Main",
+         "projectName": "RetailBillingSystem",
+         "vmArgs": "--module-path \"C:\\javafx-sdk-21.0.7\\lib\" --add-modules javafx.controls,javafx.fxml --enable-native-access=ALL-UNNAMED",
+         "classPaths": [
+            "bin",
+            "lib/sqlite-jdbc-3.51.1.0.jar",
+            "lib/pdfbox-app-3.0.6.jar"
+         ]
+      }
+   ]
+}
