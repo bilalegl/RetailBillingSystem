@@ -67,7 +67,7 @@ public class NativePrinter {
         } catch (Exception e) {
             System.err.println("Logo not loaded: " + e.getMessage());
         }
-        printBillToService(bill, service, "Light World", true, logo);
+        printBillToService(bill, service, "Fakhar Enterprises", true, logo);
     }
 
     /* ================= PRINTABLE CLASS ================= */
@@ -105,7 +105,7 @@ public class NativePrinter {
         BillPrintable(Bill bill, String shopName, Image logo) {
             this.bill = bill;
             this.items = bill.getItems();
-            this.shopName = shopName != null ? shopName : "Light World";
+            this.shopName = shopName != null ? shopName : "Fakhar Enterprises";
             this.logo = logo;
         }
 

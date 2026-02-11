@@ -113,7 +113,7 @@ public class PDFGenerator {
                         if (logoImg != null) {
                             cs.drawImage(logoImg, pageWidth - MARGIN - 80f, y - 50f, 80f, 50f);
                         }
-                        drawText(cs, shopName != null ? shopName : "Light World", MARGIN, y - 20f, FONT_HEADER, HEADER_FONT_SIZE);
+                        drawText(cs, shopName != null ? shopName : "Fakhar Enterprises", MARGIN, y - 20f, FONT_HEADER, HEADER_FONT_SIZE);
 
                         float descY = y - 38f;
                         for (String line : SHOP_DESC.split("\n")) {
@@ -239,7 +239,7 @@ public class PDFGenerator {
 
                     // Footer (centered)
                     drawTextCentered(cs,
-                            "Thank you for shopping at " + (shopName != null ? shopName : "Light World") + "!",
+                            "Thank you for shopping at " + (shopName != null ? shopName : "Fakhar Enterprises") + "!",
                             MARGIN, tableWidth, MARGIN + FOOTER_HEIGHT / 4f, FONT_REG, SMALL_FONT_SIZE);
 
                     // advance
